@@ -50,22 +50,23 @@ function loadData() {
   })
 }
 
-const count = 0;
+let count = 0;
 
-
+let old;
 processMonitor.on('change', () => {
-const old = 'ggg ';
-  // count++;
-  // if(count == 0)
-  //   old = 0;
+
+  count=1;
+
+  if(count == 0)
+    old = '0';
 
   loadData().then((res) => {
 
-    //console.log(res);
+    console.log(res.length);
 
     let msg = 'prev = ' + old + 'curent : ' + res;
 
-    old = res.slice(1);
+    old = res.slice(0, (res.length));
 
     request({
       method: 'POST',
