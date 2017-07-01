@@ -18,36 +18,36 @@ const URL = 'https://play.google.com/store/apps/details?id=';
 const lineToken = 'icc8KzH0dQH8nJYI5IX0VOpEZRlmCbyXdHkUW7f6336';
 
 let options = {
-  probeClass: 'Process',
-  initParams: {
-    pollInterval: 10000
-  }
+    probeClass: 'Process',
+    initParams: {
+        pollInterval: 10000
+    }
 }
 
 const processMonitor = new Monitor(options);
 
 function loadData() {
-  return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
 
-    let url = `http://burstcoin.biz/address/11838271257372488268`;
+        let url = `http://burstcoin.biz/address/11838271257372488268`;
 
-    request(url, (err, res, body) => {
+        request(url, (err, res, body) => {
 
-      if (!err && res.statusCode === 200) {
+            if (!err && res.statusCode === 200) {
 
-        let $ = cheerio.load(body);
+                let $ = cheerio.load(body);
 
-        let balance = $('abbr').eq(0).text().trim();
+                let balance = $('abbr').eq(0).text().trim();
 
-        console.log('loaded ' + balance);
+                console.log('loaded ' + balance);
 
-        resolve(balance);
+                resolve(balance);
 
-      } else {
-        reject("if error in loaded");
-      }
-    });
-  })
+            } else {
+                reject("if error in loaded");
+            }
+        });
+    })
 }
 
 let count = 0;
@@ -55,39 +55,47 @@ let count = 0;
 let old;
 processMonitor.on('change', () => {
 
-  count=1;
+    count = 1;
 
-  if(count == 0)
-    old = '0';
+    if (count == 0)
+        old = '0';
 
-  loadData().then((res) => {
+    loadData().then((res) => {
 
-    console.log(res.length);
+        //console.log(res.length);
 
-    let msg = 'prev = ' + old + 'curent : ' + res;
+        let msg = 'Balance : ' + res;
 
-    old = res.slice(0, (res.length));
+        if (res != old) {
+            request({
+                method: 'POST',
+                uri: 'https://notify-api.line.me/api/notify',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                'auth': {
+                    'bearer': lineToken
+                },
+                form: {
+                    message: msg
+                }
+            }, (err, httpResponse, body) => {
+                console.log(err);
+                // console.log(httpResponse);
+                console.log(body);
+            })
 
-    request({
-      method: 'POST',
-      uri: 'https://notify-api.line.me/api/notify',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      'auth': {
-        'bearer': lineToken
-      },
-      form: {
-        message: msg
-      }
-    }, (err, httpResponse, body) => {
-      console.log(err);
-      // console.log(httpResponse);
-      console.log(body);
+            old = res.slice(0, (res.length));
+        } else {
+            //console.log("same balance");
+        }
+
+
+
+
+    }).catch((err) => {
+        console.log("case error in send to line");
     })
-  }).catch((err) => {
-    console.log("case error in send to line");
-  })
 
 
 
@@ -95,10 +103,10 @@ processMonitor.on('change', () => {
 
 
 processMonitor.connect((err) => {
-  if (err) {
-    console.error('Error connecting with the process probe: ', err);
-    process.exit(1);
-  }
+    if (err) {
+        console.error('Error connecting with the process probe: ', err);
+        process.exit(1);
+    }
 });
 
 
