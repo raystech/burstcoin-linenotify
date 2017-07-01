@@ -3,59 +3,141 @@
 const Hapi = require('hapi');
 const request = require('request');
 const cheerio = require('cheerio');
+const Monitor = require('monitor');
 
 const URL = 'https://play.google.com/store/apps/details?id=';
 
-const server = new Hapi.Server();
+// const server = new Hapi.Server();
+//
+//
+// server.connection({
+//   host: 'localhost',
+//   port: 8080
+// });
 
-server.connection({
-  host: 'localhost',
-  port: 8088
-});
+const lineToken = 'icc8KzH0dQH8nJYI5IX0VOpEZRlmCbyXdHkUW7f6336';
 
-server.route({
-  method: 'GET',
-  path: '/{appId}',
-  handler: (req, reply) => {
+let options = {
+  probeClass: 'Process',
+  initParams: {
+    pollInterval: 10000
+  }
+}
 
-    let appId = req.params.appId;
-    let lang = req.query.lang || 'en';
-    let url = `${URL}${appId}&hl=${lang}`;
+const processMonitor = new Monitor(options);
 
-    request(url, (err, response, body) => {
+function loadData() {
+  return new Promise((resolve, reject) => {
 
-      if (!err && response.statusCode === 200) {
+    let url = `http://burstcoin.biz/address/11838271257372488268`;
+
+    request(url, (err, res, body) => {
+
+      if (!err && res.statusCode === 200) {
 
         let $ = cheerio.load(body);
 
-        let title = $('.document-title').text().trim();
-        let publisher = $('.document-subtitle.primary').text().trim();
-        let category = $('.document-subtitle.category').text().trim();
-        let score = $('.score-container > .score').text().trim();
-        let install = $('.meta-info > .content').eq(2).text().trim();
-        let version = $('.meta-info > .content').eq(3).text().trim();
+        let balance = $('abbr').eq(0).text().trim();
 
-        reply({
-          data: {
-            title: title,
-            publisher: publisher,
-            category: category,
-            score: score,
-            install: install,
-            version: version
-          }
-        });
+        console.log('loaded ' + balance);
+
+        resolve(balance);
 
       } else {
-        reply({
-          message: `We're sorry, the requested ${url} was not found on this server.`
-        });
+        reject("if error in loaded");
       }
     });
+  })
+}
 
+const count = 0;
+
+
+processMonitor.on('change', () => {
+const old = 'ggg ';
+  // count++;
+  // if(count == 0)
+  //   old = 0;
+
+  loadData().then((res) => {
+
+    //console.log(res);
+
+    let msg = 'prev = ' + old + 'curent : ' + res;
+
+    old = res.slice(1);
+
+    request({
+      method: 'POST',
+      uri: 'https://notify-api.line.me/api/notify',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      'auth': {
+        'bearer': lineToken
+      },
+      form: {
+        message: msg
+      }
+    }, (err, httpResponse, body) => {
+      console.log(err);
+      // console.log(httpResponse);
+      console.log(body);
+    })
+  }).catch((err) => {
+    console.log("case error in send to line");
+  })
+
+
+
+});
+
+
+processMonitor.connect((err) => {
+  if (err) {
+    console.error('Error connecting with the process probe: ', err);
+    process.exit(1);
   }
 });
 
-server.start(err => {
-  console.log(`Server running at ${server.info.uri}`);
-});
+
+//
+// server.route({
+//   method: 'GET',
+//   path: '/',
+//
+//   handler: (req, reply) => {
+//
+//     let appId = req.params.appId;
+//
+//     let url = `http://burstcoin.biz/address/11838271257372488268`;
+//
+//     request(url, (err, res, body) => {
+//
+//       if (!err && res.statusCode === 200) {
+//
+//         let $ = cheerio.load(body);
+//
+//         let balance = $('abbr').eq(0).text().trim();
+//
+//         console.log(balance);
+//
+//         reply({
+//           data: {
+//             balance: balance
+//           }
+//         });
+//
+//       } else {
+//         reply({
+//           message: `We're sorry, the requested ${url} was not found on this server.`
+//         });
+//       }
+//     });
+//
+//   }
+// });
+//
+// server.start(err => {
+//   console.log(`Server running at ${server.info.uri}`);
+// });

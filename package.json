@@ -11,6 +11,10 @@
   "dependencies": {
     "cheerio": "^0.20.0",
     "hapi": "^13.0.0",
-    "request": "^2.69.0"
+    "request": "^2.69.0",
+    "monitor": "^0.6.10"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
   }
 }
